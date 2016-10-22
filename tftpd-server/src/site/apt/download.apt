@@ -1,0 +1,30 @@
+
+ You can get the builds based on our continous integration builds, or you can check out the source from our subversion repository and build it
+using Maven2 by yourself.  Instructions below...
+
+Downloading prebuilt JAR files
+
+ That can be done from our Maven2 repository. You can find the files here: {{http://tanesha.net/maven2/net/tanesha/tftpd/}}.
+
+Downloading and building from Subversion
+
+ See the links in the left menu on how to check out from Subversion repository. After that simply run <<<mvn package>>> in the checked
+out folder and it will produce the artifacts. If you're only looking for the server then see the Installation guide also on the left menu.
+
+ After building with mvn you can use the ant build.xml to create a distribution .zip file.
+ 
+ Quick commands reference:
+ 
++-------------------------------------------------------------------------------------+
+svn co https://svn.tanesha.net/svn/tanesha/gratissiptftpd/trunk gratissiptftpd
+cd gratissiptftpd
+mvn clean install
+ant
++-------------------------------------------------------------------------------------+
+
+"Ready to run" installation
+
+ You can get a prebuilt zipped package with tftpd-server + tftpd-jdbc-interface
++ dependencies here: {{http://tanesha.net/projects/tftpd/tftpd-server-2.0.0.zip}}
+
+ See the run.sh and run.bat

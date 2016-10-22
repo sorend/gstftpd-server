@@ -1,0 +1,13 @@
+<project name="SipServlite-Spring">
+
+	<publishDate format="yyyy-MM-dd hh:mm"/>
+	
+	<body>
+		<links>
+			<item name="Tftpd Server" href="http://tanesha.net/projects/tftpd/"/>
+			<item name="TaneshaNet" href="http://tanesha.net/"/>
+		</links>
+
+		${reports}	
+	</body>
+</project>

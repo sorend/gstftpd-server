@@ -1,0 +1,12 @@
+apply plugin: 'java'
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile project(':tftpd-external-interface')
+  compile 'org.springframework:spring:2.0.5'
+  testCompile 'hsqldb:hsqldb:1.8.0.7'
+  testCompile 'junit:junit:4.12'
+}

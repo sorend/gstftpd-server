@@ -1,0 +1,121 @@
+
+ This document describes the installation procedure for the Gratissip Tftpd Server.
+
+Configuration
+
+ After unzipping the tftpd-server-x.x.x.zip into a directory of your choice, you have to configure the server.
+This is done using the Spring configuration file tftpd-server-config.xml.  Per default all virtual filesystems
+are enabled in the server, but depending on your needs, you can disable some of them.
+
+
+Defining which IP and port to listen on
+
+ In the configuration file you can define which IP and port the TFTPD server should listen on.
+Normally you should leave the port to 69, the standard tftp service port, however, in special
+cases you can here configure it to something else. Also you can define which IP to bind on. The
+default 0.0.0.0 IP means to bind on all IPs available on the machine.
+
++-------------------------------------------------------------------------------------+
+...
+<bean id="tftpdServer" class="net.tanesha.tftpd.core.Server">
+	<property name="port" value="69" />
+	<property name="bindhost" value="0.0.0.0" />
+	<property name="vfs" ref="vfs" />
+</bean>
+...
++-------------------------------------------------------------------------------------+
+
+ ''Configuration of IP and port.''
+
+Virtual Filesystems
+
+ There are four (4) kinds of different virtual filesystems supported in the server:
+
+ # Tftproot server - serves files from a folder on the filesystem.
+ # HTTP proxy server - serves files from a remote HTTP server.
+ # Grandstream firmware server - serves firmwares to Grandstream VoIP phones.
+ # Grandstream provisioning server - serves provisioning files to Grandstream VoIP phones.
+
+ In the configuration file you can find the bean with id "vfs". This bean holds a list of the enabled
+filesystems in the Tftpd server. You can add/remove from the list as you like. An example shows:
+
++-------------------------------------------------------------------------------------+
+...
+<bean id="vfs" class="net.tanesha.tftpd.core.Vfs">
+	<property name="filesystems">
+		<list>
+			<ref local="firmwareServer"/>
+			<ref local="provisionServer"/>
+			<!-- 
+				http proxy server is disabled
+				<ref local="httpProxyServer" /> 
+			-->
+			<ref local="tftprootServer"/>
+		</list>
+	</property>
+</bean>
+...
++-------------------------------------------------------------------------------------+
+
+ ''Example with firmware server, provision server and tftproot server enabled.''
+
+ The order of which you configure the filesystems is important. Each virtual filesystem
+servers different kinds of files. The first filesystem to return a file will be the file
+served to the user. For example, if you configure tftprootServer as the first filesystem in the
+list, and a file cfg00123456789 exists, then this will be served instead of the file provided
+by the provisionServer later.
+
+Configuration of Tftproot server
+
+ This filesystem serves files from a folder specified in the rootpath property. It matches all
+files and looks in the specified directory for files. If a file is found, it is served.
+
++-------------------------------------------------------------------------------------+
+...
+<bean id="tftprootServer" class="net.tanesha.tftpd.vfs.TftpRootServer">
+	<property name="rootpath" value="/tftpboot" />
+</bean>
+...
++-------------------------------------------------------------------------------------+
+
+Configuration of HTTP proxy server
+
+ This serves files from a remote HTTP server. It is using the pattern to describe which
+files should be served. Some macros are available for putting into the target URL:
+
+ * %f - filename requested.
+ * %m - MAC address (extracted only from Grandstream phones).
+
++-------------------------------------------------------------------------------------+
+...
+ 	<bean id="httpProxyServer" class="net.tanesha.tftpd.vfs.HTTPProxy">
+		<property name="pattern" value="^/?cfg[0-9a-f]{12}$"/>
+		<property name="target" value="http://voip/cgi-bin/tftp_request.cgi?mac=%m"/>
+	</bean>
+...
++-------------------------------------------------------------------------------------+
+
+ ''In the example it matches Grandstream cfg* files, by which the file will be looked
+up on the remote server.''
+
+Configuration of Firmware server and Provision Server
+
+ TODO.
+
++-------------------------------------------------------------------------------------+
+...
+	<bean id="firmwareServer" class="net.tanesha.tftpd.vfs.FirmwareServer">
+		<property name="tftpdExternalInterface" ref="tftpdExternalInterface" />
+		<property name="versioningHelper" ref="versioningHelper" />
+	</bean>
+...
++-------------------------------------------------------------------------------------+
+	
++-------------------------------------------------------------------------------------+
+...
+	<bean id="provisionServer" class="net.tanesha.tftpd.vfs.ProvisionServer">
+		<property name="tftpdExternalInterface" ref="tftpdExternalInterface" />
+	</bean>
+...
++-------------------------------------------------------------------------------------+
+	

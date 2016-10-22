@@ -1,0 +1,86 @@
+
+Overview and goals
+
+ This project provides integration with any JDBC datasource for the GratissipTFTPD server. You can use the project to run 
+the GratissipTftpd grandstream provisioning from your existing database.
+
+Installation and use
+
+ You have to put the .jar file from this project into the lib/ dir of the expanded tftpd-server installation folder. You also
+have to put the JDBC driver you wish to use in the same folder. You can get the latest tftpd-jdbc-interface-x.x.x.jar file from the
+{{{http://tanesha.net/maven2/net/tanesha/tftpd/tftpd-jdbc-interface}Maven2 repository}}.
+
+ After adding the jar files to the lib folder, you have to modify the configuration file of the tftpd-server to use the classes from the
+new jar file, this is done by modifying applicationContext-tftpd-server.xml inside the tftpd-server-x.x.x.jar.
+You should replace the section that looks like this:
+
++-------------------------------------------------------------------------------------+  
+<bean id="tftpdExternalInterface" class="org.springframework.remoting.httpinvoker.HttpInvokerProxyFactoryBean">
+	<property name="serviceInterface" value="net.tanesha.tftpd.external.TftpdExternalInterface" />
+	<property name="serviceUrl" value="http://localhost:9000/firmware/TftpdExternalInterface.httpinvoker" />
+</bean>
++-------------------------------------------------------------------------------------+  
+
+ With something that looks like this:
+
++-------------------------------------------------------------------------------------+  
+<bean id="tftpdExternalInterface" class="net.tanesha.tftpd.jdbc.JdbcExternalImpl">
+	<property name="datasource" ref="myJdbcDatasource" />
+	<property name="queryByVersion">
+		<value>
+			select phone_id, version_no, firmware_path from firmware_versions where phone_id = ? and version_no = ?
+		</value>
+	</property>
+	<property name="queryLatestVersion">
+		<value>
+			select phone_id, version_no, firmware_path from firmware_versions where phone_id = ? and is_latest = 'T'
+		</value>
+	</property>
+	<property name="queryPhoneByMac">
+		<value>
+			select phone_id, version_no from phone_firmwares where mac_address = ?
+		</value>
+	</property>
+	<property name="querySettingsByMac">
+		<value>
+			select provision_attribute, provision_value from phone_settings where mac_address = ?
+		</value>
+	</property>
+</bean>
+
+<!-- please refer to spring documentation www.springframework.org for how to configure a datasource for your database -->       
+<bean id="myJdbcDatasource" class="...">
+</bean>
++-------------------------------------------------------------------------------------+  
+
+ After that you should be able to start your tftpd-server and see that it connects to your database and is using settings from it.
+ 
+Database layout
+
+ The queries above are matching a database layout as follows:
+ 
++-------------------------------------------------------------------------------------+  
+create table firmware_versions (
+	phone_id varchar(50),
+	version_no varchar(50),
+	firmware_path varchar(100),
+	is_latest varchar(1), 
+	primary key (phone_id, version_no)
+);
+
+create table phone_firmwares ( 
+	mac_address varchar(15) primary key, 
+	phone_id varchar(50), 
+	version_no varchar(50)
+);
+
+create table phone_settings (
+	mac_address varchar(15), 
+	provision_attribute varchar(10), 
+	provision_value varchar(100),
+	primary key (mac_address, provision_attribute)
+);
++-------------------------------------------------------------------------------------+  
+
+ But, they can ofcause match any queries you create which match your database schema. 
+

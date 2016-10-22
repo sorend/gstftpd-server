@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+                http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-2.0.xsd">
+
+	<bean id="tftpdServer" class="net.tanesha.tftpd.core.Server">
+		<property name="port" value="69" />
+		<property name="bindhost" value="0.0.0.0" />
+		<property name="vfs" ref="vfs" />
+	</bean>
+
+	<bean id="vfs" class="net.tanesha.tftpd.core.Vfs">
+		<property name="filesystems">
+			<list>
+				<ref local="firmwareServer"/>
+				<ref local="provisionServer"/>
+				<!--  <ref local="httpProxyServer" /> -->
+				<ref local="tftprootServer"/>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="versioningHelper" class="net.tanesha.tftpd.vfs.VersioningHelper">
+		<property name="modelConfiguration">
+			<bean class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+				<property name="location" value="classpath:/GrandstreamModels.properties" />
+			</bean>
+		</property>
+	</bean>
+
+	<bean id="httpProxyServer" class="net.tanesha.tftpd.vfs.HTTPProxy">
+		<property name="pattern" value="^/?cfg[0-9a-f]{12}$"/>
+		<property name="target" value="http://voip/cgi-bin/tftp_request.cgi?mac=%m"/>
+	</bean>
+
+	<bean id="firmwareServer" class="net.tanesha.tftpd.vfs.FirmwareServer">
+		<property name="tftpdExternalInterface" ref="tftpdExternalInterface" />
+		<property name="versioningHelper" ref="versioningHelper" />
+	</bean>
+
+	<bean id="provisionServer" class="net.tanesha.tftpd.vfs.ProvisionServer">
+		<property name="tftpdExternalInterface" ref="tftpdExternalInterface" />
+	</bean>
+
+	<bean id="tftprootServer" class="net.tanesha.tftpd.vfs.TftpRootServer">
+		<property name="rootpath" value="/tftpboot" />
+	</bean>
+
+
+	<bean id="tftpdExternalInterface" class="net.tanesha.tftpd.jdbc.JdbcExternalInterface">
+		<property name="dataSource" ref="myDataSource" />
+		<property name="queryByVersion">
+			<value>select phone_id, version_no, firmware_path from firmware_versions where phone_id = ? and version_no = ?</value>
+		</property>
+		<property name="queryLatestVersion">
+			<value>select phone_id, version_no, firmware_path from firmware_versions where phone_id = ? and is_latest = 'T'</value>
+		</property>
+		<property name="queryPhoneByMac">
+			<value>select phone_id, version_no from phone_firmwares where mac_address = ?</value>
+		</property>
+		<property name="querySettingsByMac">
+			<value>select provision_attribute, provision_value from phone_settings where mac_address = ?</value>
+		</property>
+	</bean>
+
+	<bean id="myDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="org.hsqldb.jdbcDriver" />
+		<property name="url" value="jdbc:hsqldb:mem:testme" />
+		<property name="username" value="sa" />
+		<property name="password" value="" />
+	</bean>
+</beans>
